@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supertest Tutorial - Integration Testing</title>
+    <style>
+/* Structured Prompts Theme System */
+:root {
+  --primary-color: #1a73e8;
+  --secondary-color: #34a853;
+  --accent-color: #ff9800;
+  --danger-color: #ea4335;
+  --background-light: #f8f9fa;
+  --text-dark: #333;
+  --text-medium: #5f6368;
+  --text-light: #9aa0a6;
+  --border-light: #e8f0fe;
+  --border-medium: #dadce0;
+  --shadow-light: 0 2px 4px rgba(0,0,0,0.1);
+  --shadow-medium: 0 4px 12px rgba(0,0,0,0.15);
+  --shadow-strong: 0 6px 16px rgba(0,0,0,0.2);
+  --radius-small: 8px;
+  --radius-medium: 12px;
+  --radius-large: 15px;
+  --spacing-xs: 8px;
+  --spacing-sm: 16px;
+  --spacing-md: 24px;
+  --spacing-lg: 32px;
+  --spacing-xl: 48px;
+}
+
+/* Typography System */
+.hero-title { font-size: 3.5em; color: var(--primary-color); font-weight: 700; text-align: center; margin-bottom: var(--spacing-md); line-height: 1.2; }
+.section-title { font-size: 2.5em; color: var(--primary-color); font-weight: 600; text-align: center; margin: var(--spacing-xl) 0 var(--spacing-lg) 0; }
+.card-title { font-size: 1.8em; color: var(--primary-color); font-weight: 600; margin-bottom: var(--spacing-sm); }
+.body-large { font-size: 1.4em; line-height: 1.6; color: var(--text-dark); }
+.body-medium { font-size: 1.3em; line-height: 1.6; color: var(--text-dark); }
+.body-small { font-size: 1.1em; line-height: 1.5; color: var(--text-medium); }
+
+/* Navigation */
+.navbar { background: white; box-shadow: var(--shadow-light); padding: var(--spacing-md) 0; position: sticky; top: 0; z-index: 100; }
+.nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 var(--spacing-md); }
+.nav-logo { font-size: 1.8em; font-weight: 700; color: var(--primary-color); text-decoration: none; }
+.nav-menu { display: flex; list-style: none; margin: 0; padding: 0; gap: var(--spacing-lg); }
+.nav-item a { color: var(--text-dark); text-decoration: none; font-weight: 500; font-size: 1.2em; transition: color 0.3s ease; }
+.nav-item a:hover { color: var(--primary-color); }
+
+/* Layout Components */
+.hero-section { background: var(--background-light); padding: var(--spacing-xl) var(--spacing-md); border-radius: var(--radius-large); text-align: center; margin-bottom: var(--spacing-xl); box-shadow: var(--shadow-light); }
+.content-section { margin: var(--spacing-xl) 0; padding: 0 var(--spacing-md); }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 var(--spacing-md); }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--spacing-lg); margin: var(--spacing-lg) 0; }
+.card { background: white; border: 2px solid var(--border-light); border-radius: var(--radius-medium); padding: var(--spacing-lg); box-shadow: var(--shadow-medium); transition: transform 0.3s ease, box-shadow 0.3s ease; }
+.card:hover { transform: translateY(-4px); box-shadow: var(--shadow-strong); }
+.feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--spacing-md); margin: var(--spacing-lg) 0; }
+.feature-card { background: white; padding: var(--spacing-md); border-radius: var(--radius-medium); border-left: 4px solid var(--primary-color); box-shadow: var(--shadow-light); }
+
+/* Button System */
+.btn { display: inline-block; padding: var(--spacing-lg) var(--spacing-xl); border-radius: var(--radius-medium); text-decoration: none; font-size: 1.6em; font-weight: 600; text-align: center; transition: all 0.3s ease; border: none; cursor: pointer; }
+.btn-primary { background: var(--primary-color); color: white; box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3); }
+.btn-primary:hover { background: #1557b0; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(26, 115, 232, 0.4); }
+.btn-secondary { background: var(--secondary-color); color: white; box-shadow: 0 4px 12px rgba(52, 168, 83, 0.3); }
+.btn-secondary:hover { background: #2e7d32; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(52, 168, 83, 0.4); }
+
+/* Info Boxes */
+.info-box { background: #e6f3ff; border-left: 4px solid var(--primary-color); padding: var(--spacing-md); border-radius: var(--radius-small); margin: var(--spacing-md) 0; }
+.warning-box { background: #fff3e0; border-left: 4px solid var(--accent-color); padding: var(--spacing-md); border-radius: var(--radius-small); margin: var(--spacing-md) 0; }
+.success-box { background: #e8f5e8; border-left: 4px solid var(--secondary-color); padding: var(--spacing-md); border-radius: var(--radius-small); margin: var(--spacing-md) 0; }
+
+/* Form Components */
+.form-container { background: var(--background-light); border-radius: var(--radius-medium); overflow: hidden; border: 1px solid var(--border-medium); margin: var(--spacing-lg) 0; }
+.form-section { border-bottom: 1px solid var(--border-medium); }
+.form-section:last-child { border-bottom: none; }
+.form-header { background: var(--primary-color); color: white; padding: var(--spacing-md) var(--spacing-lg); cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 1.3em; }
+.form-header:hover { background: #1557b0; }
+.form-content { padding: var(--spacing-lg); display: none; }
+.form-content.active { display: block; }
+.form-row { margin-bottom: var(--spacing-lg); }
+.form-row label { display: block; font-weight: 600; margin-bottom: var(--spacing-sm); color: var(--text-dark); font-size: 1.2em; }
+.form-row select, .form-row textarea, .form-row input { width: 100%; padding: var(--spacing-md); border: 1px solid var(--border-medium); border-radius: var(--radius-small); font-size: 1.1em; font-family: inherit; }
+.form-row textarea { min-height: 120px; resize: vertical; }
+.form-help { font-size: 1em; color: var(--text-medium); margin-top: var(--spacing-sm); }
+.checkbox-group { display: flex; align-items: center; gap: var(--spacing-sm); }
+.checkbox-group input[type="checkbox"] { width: auto; }
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .hero-title { font-size: 2.5em; }
+  .section-title { font-size: 2em; }
+  .body-large { font-size: 1.2em; }
+  .body-medium { font-size: 1.1em; }
+  .nav-menu { flex-direction: column; gap: var(--spacing-sm); }
+  .nav-container { flex-direction: column; gap: var(--spacing-md); }
+}
+
+@media (max-width: 480px) {
+  .hero-title { font-size: 2em; }
+  .hero-section { padding: var(--spacing-lg) var(--spacing-sm); }
+  .content-section { padding: 0 var(--spacing-sm); }
+}
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="#" class="nav-logo">🧪 Supertest Tutorial</a>
+            <ul class="nav-menu">
+                <li class="nav-item"><a href="sut-step1-setup.html">Step 1: Setup</a></li>
+                <li class="nav-item"><a href="sut-step2-openapi.html">Step 2: OpenAPI</a></li>
+                <li class="nav-item"><a href="#implementation">Step 3-4: Implementation</a></li>
+                <li class="nav-item"><a href="sut-step5-testing.html">Step 5: Testing</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Hero Section -->
+        <div class="hero-section">
+            <h1 class="hero-title">🧪 Step 5: Supertest Integration Testing</h1>
+            <p class="body-large">Generate comprehensive test suite with authentication, CRUD, validation, and integration tests</p>
+            
+            <div class="info-box" style="max-width: 800px; margin: var(--spacing-lg) auto;">
+                <strong>🎯 Goal:</strong> Create production-ready Supertest tests that verify API behavior, validate error handling, enforce security rules, and catch regressions. Tests should be fast, reliable, and demonstrate best practices for integration testing.
+            </div>
+        </div>
+
+        <!-- What You'll Get -->
+        <div class="content-section">
+            <h2 class="section-title">📁 What This Prompt Creates</h2>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3 style="color: var(--primary-color); margin-bottom: var(--spacing-sm);">🔐 Authentication Tests</h3>
+                    <p class="body-medium">User registration, login, token validation, and auth error scenarios</p>
+                </div>
+                <div class="feature-card">
+                    <h3 style="color: var(--primary-color); margin-bottom: var(--spacing-sm);">📝 CRUD Tests</h3>
+                    <p class="body-medium">Create, read, update, delete todos with ownership verification</p>
+                </div>
+                <div class="feature-card">
+                    <h3 style="color: var(--primary-color); margin-bottom: var(--spacing-sm);">✅ Validation Tests</h3>
+                    <p class="body-medium">Input validation, boundary conditions, and error responses</p>
+                </div>
+                <div class="feature-card">
+                    <h3 style="color: var(--primary-color); margin-bottom: var(--spacing-sm);">🔒 Authorization Tests</h3>
+                    <p class="body-medium">Ownership enforcement, forbidden access, and security rules</p>
+                </div>
+                <div class="feature-card">
+                    <h3 style="color: var(--primary-color); margin-bottom: var(--spacing-sm);">🔄 Integration Tests</h3>
+                    <p class="body-medium">End-to-end workflows with realistic user scenarios</p>
+                </div>
+                <div class="feature-card">
+                    <h3 style="color: var(--primary-color); margin-bottom: var(--spacing-sm);">⚙️ Test Infrastructure</h3>
+                    <p class="body-medium">Setup/teardown, test database, helper utilities, and Jest configuration</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prerequisites -->
+        <div class="content-section">
+            <h2 class="section-title">⚠️ Prerequisites</h2>
+            
+            <div class="warning-box">
+                <h3 style="color: var(--accent-color); margin-bottom: var(--spacing-md);">Required Before Testing</h3>
+                <p class="body-medium">
+                    <strong>This prompt assumes Steps 1-4 are complete:</strong>
+                </p>
+                <ul style="margin-top: var(--spacing-md);">
+                    <li class="body-medium">✅ Project structure exists (Step 1)</li>
+                    <li class="body-medium">✅ OpenAPI specification documented (Step 2)</li>
+                    <li class="body-medium">✅ Database and models implemented (Step 3)</li>
+                    <li class="body-medium">✅ Express API with all 7 endpoints working (Step 4)</li>
+                </ul>
+                <p class="body-medium" style="margin-top: var(--spacing-md);">
+                    <strong>Verify backend works:</strong> <code>npm run dev</code> should start server on port 3000
+                </p>
+            </div>
+        </div>
+
+        <!-- Customization Form -->
+        <div class="content-section">
+            <h2 class="section-title">🛠️ Customize Your Test Suite</h2>
+            
+            <div class="form-container">
+                <!-- Section 1: Context -->
+                <div class="form-section">
+                    <div class="form-header" onclick="toggleSection(this)">
+                        <span>1. Project Context</span>
+                        <span>▲</span>
+                    </div>
+                    <div class="form-content active">
+                        <div class="form-row">
+                            <label for="project-name">Project Name:</label>
+                            <input type="text" id="project-name" value="todo-api-supertest-tutorial">
+                            <div class="form-help">Must match existing project name</div>
+                        </div>
+                        <div class="form-row">
+                            <label for="test-db-path">Test Database Path:</label>
+                            <input type="text" id="test-db-path" value="./data/todos-test.db">
+                            <div class="form-help">Separate database for tests (auto-cleaned)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Test Coverage -->
+                <div class="form-section">
+                    <div class="form-header" onclick="toggleSection(this)">
+                        <span>2. Test Coverage</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="form-content">
+                        <div class="form-row">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="test-auth" checked>
+                                <label for="test-auth" style="margin: 0;">Authentication Tests (register, login)</label>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="test-todos" checked>
+                                <label for="test-todos" style="margin: 0;">Todo CRUD Tests (create, read, update, delete)</label>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="test-validation" checked>
+                                <label for="test-validation" style="margin: 0;">Validation Tests (input errors, boundaries)</label>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="test-authorization" checked>
+                                <label for="test-authorization" style="margin: 0;">Authorization Tests (ownership, forbidden access)</label>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="test-integration" checked>
+                                <label for="test-integration" style="margin: 0;">Integration Tests (end-to-end workflows)</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Test Configuration -->
+                <div class="form-section">
+                    <div class="form-header" onclick="toggleSection(this)">
+                        <span>3. Test Configuration</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="form-content">
+                        <div class="form-row">
+                            <label for="test-timeout">Test Timeout (ms):</label>
+                            <input type="number" id="test-timeout" value="5000" min="1000" max="30000" step="1000">
+                            <div class="form-help">Maximum time per test (default: 5000ms)</div>
+                        </div>
+                        <div class="form-row">
+                            <label for="coverage-threshold">Coverage Threshold (%):</label>
+                            <input type="number" id="coverage-threshold" value="80" min="0" max="100" step="5">
+                            <div class="form-help">Minimum code coverage required (default: 80%)</div>
+                        </div>
+                        <div class="form-row">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="watch-mode" checked>
+                                <label for="watch-mode" style="margin: 0;">Include Watch Mode Script</label>
+                            </div>
+                            <div class="form-help">npm test:watch for development</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 4: Test Patterns -->
+                <div class="form-section">
+                    <div class="form-header" onclick="toggleSection(this)">
+                        <span>4. Testing Best Practices</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="form-content">
+                        <div class="form-row">
+                            <label for="test-style">Test Organization Style:</label>
+                            <select id="test-style">
+                                <option value="feature" selected>Feature-based (auth.test.js, todos.test.js)</option>
+                                <option value="endpoint">Endpoint-based (register.test.js, login.test.js, ...)</option>
+                            </select>
+                            <div class="form-help">How to organize test files</div>
+                        </div>
+                        <div class="form-row">
+                            <label for="assertion-style">Assertion Style:</label>
+                            <select id="assertion-style">
+                                <option value="expect" selected>Jest expect (expect(res.status).toBe(200))</option>
+                                <option value="supertest">Supertest chaining (expect(200))</option>
+                                <option value="mixed">Mixed (both patterns)</option>
+                            </select>
+                            <div class="form-help">How to write test assertions</div>
+                        </div>
+                        <div class="form-row">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="test-helpers" checked>
+                                <label for="test-helpers" style="margin: 0;">Create Test Helper Utilities</label>
+                            </div>
+                            <div class="form-help">Helper functions for common test operations</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin: var(--spacing-xl) 0;">
+                    <button class="btn btn-secondary" onclick="resetForm()" style="margin-right: var(--spacing-md); font-size: 1.2em; padding: var(--spacing-sm) var(--spacing-md);">🔄 Reset</button>
+                    <button class="btn btn-primary" onclick="generatePrompt()" style="font-size: 1.2em; padding: var(--spacing-sm) var(--spacing-md);">🧪 Generate Testing Prompt</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Testing Philosophy -->
+        <div class="content-section">
+            <h2 class="section-title">🎓 Supertest Testing Philosophy</h2>
+            
+            <div class="success-box">
+                <h3 style="color: var(--secondary-color); margin-bottom: var(--spacing-md);">Why Integration Tests Matter</h3>
+                <p class="body-medium">
+                    Unit tests verify individual functions work. Integration tests verify the <strong>whole system</strong> works together:
+                </p>
+                <ul style="margin-top: var(--spacing-md);">
+                    <li class="body-medium"><strong>Real HTTP:</strong> Tests make actual HTTP requests like clients do</li>
+                    <li class="body-medium"><strong>Real Database:</strong> Tests use SQLite like production (separate test DB)</li>
+                    <li class="body-medium"><strong>Real Middleware:</strong> Authentication, validation, error handling all tested</li>
+                    <li class="body-medium"><strong>Real Workflows:</strong> Register → Login → Create Todo → Update → Delete</li>
+                </ul>
+                <p class="body-medium" style="margin-top: var(--spacing-md);">
+                    <strong>Result:</strong> High confidence that the API works as designed. If tests pass, the API is ready for production.
+                </p>
+            </div>
+        </div>
+
+        <!-- Test Structure Preview -->
+        <div class="content-section">
+            <h2 class="section-title">📋 Test Structure Preview</h2>
+            
+            <div class="card-grid">
+                <div class="card">
+                    <h3 class="card-title">🔐 auth.test.js</h3>
+                    <p class="body-medium">Registration, login, token validation, duplicate emails, invalid credentials, missing fields</p>
+                    <p class="body-small" style="margin-top: var(--spacing-sm); color: var(--text-medium);">~15-20 tests</p>
+                </div>
+                <div class="card">
+                    <h3 class="card-title">📝 todos.test.js</h3>
+                    <p class="body-medium">Create, read, update, delete todos. Test ownership, not found, invalid IDs, auth required</p>
+                    <p class="body-small" style="margin-top: var(--spacing-sm); color: var(--text-medium);">~20-25 tests</p>
+                </div>
+                <div class="card">
+                    <h3 class="card-title">✅ validation.test.js</h3>
+                    <p class="body-medium">Field validation, min/max lengths, required fields, type errors, boundary conditions</p>
+                    <p class="body-small" style="margin-top: var(--spacing-sm); color: var(--text-medium);">~15-20 tests</p>
+                </div>
+                <div class="card">
+                    <h3 class="card-title">🔒 authorization.test.js</h3>
+                    <p class="body-medium">Ownership checks, forbidden access, cross-user attacks, missing auth headers</p>
+                    <p class="body-small" style="margin-top: var(--spacing-sm); color: var(--text-medium);">~10-15 tests</p>
+                </div>
+                <div class="card">
+                    <h3 class="card-title">🔄 integration.test.js</h3>
+                    <p class="body-medium">Complete workflows: register → login → create todos → mark complete → delete</p>
+                    <p class="body-small" style="margin-top: var(--spacing-sm); color: var(--text-medium);">~5-10 tests</p>
+                </div>
+                <div class="card">
+                    <h3 class="card-title">⚙️ setup.js</h3>
+                    <p class="body-medium">Global test configuration, database setup/teardown, helper utilities</p>
+                    <p class="body-small" style="margin-top: var(--spacing-sm); color: var(--text-medium);">Infrastructure</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Next Steps -->
+        <div class="content-section">
+            <h2 class="section-title">🚀 After Testing</h2>
+            
+            <div class="info-box">
+                <strong>Once tests are complete, you'll have:</strong>
+                <ul style="margin-top: var(--spacing-md);">
+                    <li class="body-medium">✅ 65-90 comprehensive integration tests</li>
+                    <li class="body-medium">✅ 80%+ code coverage</li>
+                    <li class="body-medium">✅ Production-ready Todo API</li>
+                    <li class="body-medium">✅ Complete tutorial demonstrating Supertest patterns</li>
+                </ul>
+                <p class="body-medium" style="margin-top: var(--spacing-md);">
+                    <strong>Optional Extensions:</strong> Add frontend (Vue/React), E2E tests (Playwright), Docker, CI/CD
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleSection(header) {
+            const content = header.nextElementSibling;
+            const arrow = header.querySelector('span:last-child');
+            
+            if (content.classList.contains('active')) {
+                content.classList.remove('active');
+                arrow.textContent = '▼';
+            } else {
+                content.classList.add('active');
+                arrow.textContent = '▲';
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('project-name').value = 'todo-api-supertest-tutorial';
+            document.getElementById('test-db-path').value = './data/todos-test.db';
+            document.getElementById('test-auth').checked = true;
+            document.getElementById('test-todos').checked = true;
+            document.getElementById('test-validation').checked = true;
+            document.getElementById('test-authorization').checked = true;
+            document.getElementById('test-integration').checked = true;
+            document.getElementById('test-timeout').value = '5000';
+            document.getElementById('coverage-threshold').value = '80';
+            document.getElementById('watch-mode').checked = true;
+            document.getElementById('test-style').value = 'feature';
+            document.getElementById('assertion-style').value = 'expect';
+            document.getElementById('test-helpers').checked = true;
+        }
+
+        function generatePrompt() {
+            const projectName = document.getElementById('project-name').value;
+            const testDbPath = document.getElementById('test-db-path').value;
+            const testAuth = document.getElementById('test-auth').checked;
+            const testTodos = document.getElementById('test-todos').checked;
+            const testValidation = document.getElementById('test-validation').checked;
+            const testAuthorization = document.getElementById('test-authorization').checked;
+            const testIntegration = document.getElementById('test-integration').checked;
+            const testTimeout = document.getElementById('test-timeout').value;
+            const coverageThreshold = document.getElementById('coverage-threshold').value;
+            const watchMode = document.getElementById('watch-mode').checked;
+            const testStyle = document.getElementById('test-style').value;
+            const assertionStyle = document.getElementById('assertion-style').value;
+            const testHelpers = document.getElementById('test-helpers').checked;
+
+            const promptText = `# Supertest Tutorial: Integration Testing Suite
+
+## Role
+You are a senior QA engineer and test automation specialist. You write production-quality integration tests that are fast, reliable, maintainable, and catch real bugs. Your tests verify API behavior from a client perspective using Supertest.
+
+## Mission
+Create a comprehensive Supertest integration test suite for the Todo API. Tests should verify all endpoints, validate error handling, enforce security rules, and demonstrate testing best practices. The test suite must be production-ready and serve as a tutorial for others learning Supertest.
+
+## Context - Backend is Complete
+The backend API (Phase 1) is fully implemented and working:
+- ✅ All 7 endpoints functional (register, login, create/read/update/delete todos)
+- ✅ JWT authentication middleware
+- ✅ Input validation with express-validator
+- ✅ Error handling middleware
+- ✅ SQLite database with Users + Todos tables
+- ✅ Ownership verification on todos
+
+**Verify before proceeding:**
+\`\`\`bash
+cd /Users/testuser/git/${projectName}
+npm run dev
+# Server should start on port 3000
+\`\`\`
+
+## Project Configuration
+- **Project Name**: ${projectName}
+- **Test Database**: ${testDbPath}
+- **Test Timeout**: ${testTimeout}ms
+- **Coverage Threshold**: ${coverageThreshold}%
+- **Test Organization**: ${testStyle === 'feature' ? 'Feature-based (auth.test.js, todos.test.js, etc.)' : 'Endpoint-based (register.test.js, login.test.js, etc.)'}
+- **Assertion Style**: ${assertionStyle === 'expect' ? 'Jest expect syntax' : assertionStyle === 'supertest' ? 'Supertest chaining' : 'Mixed (both patterns)'}
+
+## Test Coverage Configuration
+
+Create tests for:
+${testAuth ? '✅ Authentication (register, login, token validation)' : '❌ Authentication tests (skipped)'}
+${testTodos ? '✅ Todo CRUD (create, read, update, delete)' : '❌ Todo CRUD tests (skipped)'}
+${testValidation ? '✅ Validation (input errors, boundaries)' : '❌ Validation tests (skipped)'}
+${testAuthorization ? '✅ Authorization (ownership, forbidden access)' : '❌ Authorization tests (skipped)'}
+${testIntegration ? '✅ Integration (end-to-end workflows)' : '❌ Integration tests (skipped)'}
+
+## Test Infrastructure Setup
+
+### 1. Install Dependencies
+
+Verify \`package.json\` has test dependencies:
+\`\`\`json
+{
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3"
+  },
+  "scripts": {
+    "test": "NODE_ENV=test jest",
+${watchMode ? '    "test:watch": "NODE_ENV=test jest --watch",' : ''}
+    "test:coverage": "NODE_ENV=test jest --coverage"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testTimeout": ${testTimeout},
+    "coverageThreshold": {
+      "global": {
+        "branches": ${coverageThreshold},
+        "functions": ${coverageThreshold},
+        "lines": ${coverageThreshold},
+        "statements": ${coverageThreshold}
+      }
+    },
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "/tests/"
+    ]
+  }
+}
+\`\`\`
+
+If missing, update package.json with these additions.
+
+### 2. Create Test Setup File
+
+Create \`tests/setup.js\`:
+\`\`\`javascript
+const { getDatabase, initDatabase } = require('../src/config/database');
+const fs = require('fs');
+const path = require('path');
+
+// Test database configuration
+process.env.DB_PATH = '${testDbPath}';
+process.env.NODE_ENV = 'test';
+
+// Global setup - runs once before all tests
+beforeAll(() => {
+  // Ensure test data directory exists
+  const testDbDir = path.dirname(process.env.DB_PATH);
+  if (!fs.existsSync(testDbDir)) {
+    fs.mkdirSync(testDbDir, { recursive: true });
+  }
+  
+  // Initialize test database
+  initDatabase();
+});
+
+// Clean database before each test
+beforeEach(() => {
+  const db = getDatabase();
+  db.exec('DELETE FROM todos');
+  db.exec('DELETE FROM users');
+});
+
+// Cleanup after all tests
+afterAll(() => {
+  const db = getDatabase();
+  db.close();
+  
+  // Remove test database file
+  if (fs.existsSync(process.env.DB_PATH)) {
+    fs.unlinkSync(process.env.DB_PATH);
+  }
+});
+\`\`\`
+
+${testHelpers ? `### 3. Create Test Helper Utilities
+
+Create \`tests/helpers.js\`:
+\`\`\`javascript
+const request = require('supertest');
+const app = require('../src/app');
+
+/**
+ * Register a test user and return user data + token
+ */
+async function registerUser(userData = {}) {
+  const defaultUser = {
+    email: \`test\${Date.now()}@example.com\`,
+    password: 'password123',
+    name: 'Test User'
+  };
+  
+  const user = { ...defaultUser, ...userData };
+  
+  const res = await request(app)
+    .post('/api/auth/register')
+    .send(user);
+  
+  return {
+    user: res.body.user,
+    token: res.body.token,
+    password: user.password
+  };
+}
+
+/**
+ * Login an existing user and return token
+ */
+async function loginUser(email, password) {
+  const res = await request(app)
+    .post('/api/auth/login')
+    .send({ email, password });
+  
+  return {
+    user: res.body.user,
+    token: res.body.token
+  };
+}
+
+/**
+ * Create a test todo for a user
+ */
+async function createTodo(token, todoData = {}) {
+  const defaultTodo = {
+    title: 'Test Todo',
+    description: 'Test description',
+    completed: false
+  };
+  
+  const todo = { ...defaultTodo, ...todoData };
+  
+  const res = await request(app)
+    .post('/api/todos')
+    .set('Authorization', \`Bearer \${token}\`)
+    .send(todo);
+  
+  return res.body;
+}
+
+module.exports = {
+  registerUser,
+  loginUser,
+  createTodo
+};
+\`\`\`
+` : ''}
+
+## Test Files to Create
+
+${testAuth ? `### tests/auth.test.js - Authentication Tests
+
+Create comprehensive authentication tests:
+
+**Test Coverage:**
+1. **POST /api/auth/register**
+   - ✅ Successfully register new user
+   - ✅ Returns user object (no password) and JWT token
+   - ❌ Reject duplicate email (409)
+   - ❌ Reject missing required fields (400)
+   - ❌ Reject invalid email format (400)
+   - ❌ Reject password < 8 characters (400)
+   - ❌ Reject invalid data types (400)
+
+2. **POST /api/auth/login**
+   - ✅ Successfully login with valid credentials
+   - ✅ Returns user object and JWT token
+   - ❌ Reject wrong password (401)
+   - ❌ Reject non-existent email (401)
+   - ❌ Reject missing credentials (400)
+
+3. **JWT Token Validation**
+   - ✅ Valid token grants access to protected routes
+   - ❌ Missing token returns 401
+   - ❌ Invalid token returns 401
+   - ❌ Malformed token returns 401
+
+${assertionStyle === 'expect' ? `**Example Test (Jest expect style):**
+\`\`\`javascript
+describe('POST /api/auth/register', () => {
+  test('should register new user with valid data', async () => {
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({
+        email: 'newuser@example.com',
+        password: 'password123',
+        name: 'New User'
+      });
+    
+    expect(res.status).toBe(201);
+    expect(res.body).toHaveProperty('user');
+    expect(res.body).toHaveProperty('token');
+    expect(res.body.user.email).toBe('newuser@example.com');
+    expect(res.body.user).not.toHaveProperty('password');
+  });
+});
+\`\`\`
+` : assertionStyle === 'supertest' ? `**Example Test (Supertest chaining style):**
+\`\`\`javascript
+describe('POST /api/auth/register', () => {
+  test('should register new user with valid data', (done) => {
+    request(app)
+      .post('/api/auth/register')
+      .send({
+        email: 'newuser@example.com',
+        password: 'password123',
+        name: 'New User'
+      })
+      .expect(201)
+      .expect('Content-Type', /json/)
+      .end((err, res) => {
+        if (err) return done(err);
+        expect(res.body).toHaveProperty('user');
+        expect(res.body).toHaveProperty('token');
+        done();
+      });
+  });
+});
+\`\`\`
+` : `**Example Test (Mixed style):**
+\`\`\`javascript
+describe('POST /api/auth/register', () => {
+  test('should register new user with valid data', async () => {
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({
+        email: 'newuser@example.com',
+        password: 'password123',
+        name: 'New User'
+      })
+      .expect(201)
+      .expect('Content-Type', /json/);
+    
+    expect(res.body).toHaveProperty('user');
+    expect(res.body).toHaveProperty('token');
+    expect(res.body.user.email).toBe('newuser@example.com');
+  });
+});
+\`\`\`
+`}
+` : ''}
+
+${testTodos ? `### tests/todos.test.js - Todo CRUD Tests
+
+Create comprehensive todo CRUD tests:
+
+**Test Coverage:**
+1. **POST /api/todos**
+   - ✅ Create todo with valid data
+   - ✅ Create todo with minimal data (only title)
+   - ✅ Create todo with all optional fields
+   - ❌ Reject missing auth token (401)
+   - ❌ Reject invalid token (401)
+   - ❌ Reject missing title (400)
+
+2. **GET /api/todos**
+   - ✅ Get all todos for authenticated user
+   - ✅ Returns empty array when no todos exist
+   - ✅ Returns only user's own todos (not other users')
+   - ❌ Reject missing auth token (401)
+
+3. **GET /api/todos/:id**
+   - ✅ Get specific todo by ID
+   - ✅ Returns correct todo data
+   - ❌ Reject missing auth token (401)
+   - ❌ Return 404 for non-existent ID
+   - ❌ Return 403 for todo owned by different user
+   - ❌ Return 400 for invalid ID format
+
+4. **PUT /api/todos/:id**
+   - ✅ Update todo with valid data
+   - ✅ Partial update (only some fields)
+   - ✅ Mark todo as completed
+   - ❌ Reject missing auth token (401)
+   - ❌ Return 404 for non-existent ID
+   - ❌ Return 403 for todo owned by different user
+   - ❌ Reject invalid data (400)
+
+5. **DELETE /api/todos/:id**
+   - ✅ Delete todo successfully (204)
+   - ✅ Todo no longer exists after deletion
+   - ❌ Reject missing auth token (401)
+   - ❌ Return 404 for non-existent ID
+   - ❌ Return 403 for todo owned by different user
+` : ''}
+
+${testValidation ? `### tests/validation.test.js - Input Validation Tests
+
+Create comprehensive validation tests:
+
+**Test Coverage:**
+1. **User Registration Validation**
+   - ❌ Email: required, valid email format
+   - ❌ Password: required, min 8 chars
+   - ❌ Name: required, min 2 chars, max 50 chars
+   - ❌ Extra fields: ${testStyle === 'feature' ? 'rejected if strict mode' : 'test based on API config'}
+
+2. **Todo Creation Validation**
+   - ❌ Title: required, min 1 char, max 200 chars
+   - ❌ Description: optional, max 1000 chars
+   - ❌ Completed: optional, boolean only
+   - ❌ Due date: optional, valid ISO 8601 date
+
+3. **Boundary Conditions**
+   - Test exact min/max lengths
+   - Test one below min, one above max
+   - Test empty strings vs null vs undefined
+   - Test SQL injection attempts (should be safe)
+
+**Example Test:**
+\`\`\`javascript
+describe('Todo Validation', () => {
+  test('should reject title longer than 200 chars', async () => {
+    const { token } = await registerUser();
+    const longTitle = 'a'.repeat(201);
+    
+    const res = await request(app)
+      .post('/api/todos')
+      .set('Authorization', \`Bearer \${token}\`)
+      .send({ title: longTitle });
+    
+    expect(res.status).toBe(400);
+    expect(res.body.error).toHaveProperty('message');
+  });
+});
+\`\`\`
+` : ''}
+
+${testAuthorization ? `### tests/authorization.test.js - Authorization Tests
+
+Create comprehensive authorization tests:
+
+**Test Coverage:**
+1. **Ownership Verification**
+   - User A cannot access User B's todos
+   - User A cannot update User B's todos
+   - User A cannot delete User B's todos
+
+2. **Missing Authentication**
+   - All protected routes reject missing token
+   - Invalid token formats rejected
+
+3. **Expired Tokens** (if implemented)
+   - Test token expiry handling
+
+**Example Test:**
+\`\`\`javascript
+describe('Authorization', () => {
+  test('should not allow user to access another user\\'s todo', async () => {
+    const { token: tokenA } = await registerUser({ email: 'userA@example.com' });
+    const { token: tokenB } = await registerUser({ email: 'userB@example.com' });
+    
+    // User A creates a todo
+    const todo = await createTodo(tokenA);
+    
+    // User B tries to access it
+    const res = await request(app)
+      .get(\`/api/todos/\${todo.id}\`)
+      .set('Authorization', \`Bearer \${tokenB}\`);
+    
+    expect(res.status).toBe(403);
+  });
+});
+\`\`\`
+` : ''}
+
+${testIntegration ? `### tests/integration.test.js - End-to-End Workflows
+
+Create realistic user workflow tests:
+
+**Test Coverage:**
+1. **Complete User Journey**
+   - Register → Login → Create Todos → Update → Delete
+
+2. **Multi-User Scenarios**
+   - Multiple users operating independently
+   - Verify isolation between users
+
+3. **Complex Workflows**
+   - Create multiple todos
+   - Mark some completed
+   - Filter/verify state
+
+**Example Test:**
+\`\`\`javascript
+describe('Integration - Complete User Workflow', () => {
+  test('should handle complete todo lifecycle', async () => {
+    // Register and login
+    const { token } = await registerUser();
+    
+    // Create multiple todos
+    const todo1 = await createTodo(token, { title: 'First Todo' });
+    const todo2 = await createTodo(token, { title: 'Second Todo' });
+    
+    // Get all todos
+    let res = await request(app)
+      .get('/api/todos')
+      .set('Authorization', \`Bearer \${token}\`);
+    
+    expect(res.body).toHaveLength(2);
+    
+    // Mark first todo complete
+    res = await request(app)
+      .put(\`/api/todos/\${todo1.id}\`)
+      .set('Authorization', \`Bearer \${token}\`)
+      .send({ completed: true });
+    
+    expect(res.body.completed).toBe(true);
+    
+    // Delete second todo
+    res = await request(app)
+      .delete(\`/api/todos/\${todo2.id}\`)
+      .set('Authorization', \`Bearer \${token}\`);
+    
+    expect(res.status).toBe(204);
+    
+    // Verify only one todo remains
+    res = await request(app)
+      .get('/api/todos')
+      .set('Authorization', \`Bearer \${token}\`);
+    
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].completed).toBe(true);
+  });
+});
+\`\`\`
+` : ''}
+
+## Testing Best Practices
+
+Apply these principles to all tests:
+
+1. **Isolation**: Each test is independent, no shared state
+2. **Cleanup**: Database cleared before each test
+3. **Realistic**: Use real HTTP requests, real database
+4. **Fast**: Tests should run quickly (< ${testTimeout}ms each)
+5. **Readable**: Clear test names, good assertions
+6. **Maintainable**: DRY principle, helper functions
+7. **Comprehensive**: Cover success + all error scenarios
+
+## Quality Checklist
+
+Before marking complete, verify:
+
+${testAuth ? '- ✅ auth.test.js created with ~15-20 tests' : '- ⏭️ auth.test.js skipped'}
+${testTodos ? '- ✅ todos.test.js created with ~20-25 tests' : '- ⏭️ todos.test.js skipped'}
+${testValidation ? '- ✅ validation.test.js created with ~15-20 tests' : '- ⏭️ validation.test.js skipped'}
+${testAuthorization ? '- ✅ authorization.test.js created with ~10-15 tests' : '- ⏭️ authorization.test.js skipped'}
+${testIntegration ? '- ✅ integration.test.js created with ~5-10 tests' : '- ⏭️ integration.test.js skipped'}
+- ✅ setup.js created with database management
+${testHelpers ? '- ✅ helpers.js created with test utilities' : ''}
+- ✅ All tests pass: \`npm test\`
+- ✅ Coverage meets threshold (${coverageThreshold}%): \`npm run test:coverage\`
+- ✅ No console errors or warnings
+- ✅ Tests run quickly (total < 30s)
+
+## Run Tests
+
+After creating all test files:
+
+\`\`\`bash
+# Run all tests
+npm test
+
+# Watch mode (if enabled)
+${watchMode ? 'npm run test:watch' : '# (watch mode disabled)'}
+
+# Coverage report
+npm run test:coverage
+\`\`\`
+
+## Completion Confirmation
+
+After creating the test suite, provide:
+1. ✅ List of test files created
+2. ✅ Total number of tests written
+3. ✅ Test results (\`npm test\` output)
+4. ✅ Coverage report summary
+5. ✅ Any issues or recommendations
+
+**IMPORTANT - MCP Filesystem Requirements:**
+When creating test files (.js files), you MUST use the \`filesystem:write_file\` tool. 
+
+Do NOT use bash_tool with heredocs or cat commands - those write to a container that won't sync to the actual filesystem where npm/node can access files.
+
+**Verification:** After creating files, verify they exist with:
+\`\`\`bash
+ls -la /Users/testuser/git/${projectName}/tests/
+find /Users/testuser/git/${projectName}/tests -type f
+\`\`\`
+
+**Project location:** \`/Users/testuser/git/${projectName}/\`
+
+Generate a production-ready Supertest integration test suite that comprehensively verifies API behavior and demonstrates testing best practices.`;
+
+            showModal('🧪 Supertest Tutorial - Integration Testing Prompt', promptText);
+        }
+
+        function showModal(title, content) {
+            const modalOverlay = document.createElement('div');
+            modalOverlay.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0, 0, 0, 0.7); z-index: 10000; display: flex;
+                justify-content: center; align-items: center; padding: 20px;
+            `;
+            
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+                background: white; border-radius: var(--radius-medium); width: 90%;
+                max-width: 900px; max-height: 90%; overflow: hidden;
+                box-shadow: var(--shadow-strong); display: flex; flex-direction: column;
+            `;
+            
+            const modalHeader = document.createElement('div');
+            modalHeader.style.cssText = `
+                background: var(--primary-color); color: white;
+                padding: var(--spacing-md) var(--spacing-lg);
+                display: flex; justify-content: space-between; align-items: center;
+            `;
+            
+            const modalTitle = document.createElement('h3');
+            modalTitle.textContent = title;
+            modalTitle.style.cssText = `margin: 0; font-size: 1.4em; font-weight: 600;`;
+            
+            const closeButton = document.createElement('button');
+            closeButton.innerHTML = '✕';
+            closeButton.style.cssText = `
+                background: none; border: none; color: white; font-size: 1.5em;
+                cursor: pointer; padding: 5px; width: 30px; height: 30px;
+                border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            `;
+            closeButton.onmouseover = () => closeButton.style.background = 'rgba(255,255,255,0.2)';
+            closeButton.onmouseout = () => closeButton.style.background = 'none';
+            closeButton.onclick = () => document.body.removeChild(modalOverlay);
+            
+            modalHeader.appendChild(modalTitle);
+            modalHeader.appendChild(closeButton);
+            
+            const modalBody = document.createElement('div');
+            modalBody.style.cssText = `padding: var(--spacing-lg); overflow-y: auto; flex: 1;`;
+            
+            const promptTextArea = document.createElement('textarea');
+            promptTextArea.value = content;
+            promptTextArea.style.cssText = `
+                width: 100%; height: 400px; font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+                font-size: 0.9em; line-height: 1.4; border: 1px solid var(--border-medium);
+                border-radius: var(--radius-small); padding: var(--spacing-md);
+                resize: vertical; background: #f8f9fa;
+            `;
+            
+            modalBody.appendChild(promptTextArea);
+            
+            const modalFooter = document.createElement('div');
+            modalFooter.style.cssText = `
+                padding: var(--spacing-md) var(--spacing-lg);
+                border-top: 1px solid var(--border-medium);
+                display: flex; gap: var(--spacing-md); justify-content: flex-end;
+            `;
+            
+            const copyButton = document.createElement('button');
+            copyButton.textContent = '📋 Copy';
+            copyButton.className = 'btn btn-secondary';
+            copyButton.style.fontSize = '1em';
+            copyButton.style.padding = '12px 24px';
+            copyButton.onclick = () => {
+                promptTextArea.select();
+                document.execCommand('copy');
+                copyButton.textContent = '✅ Copied!';
+                setTimeout(() => copyButton.textContent = '📋 Copy', 2000);
+            };
+            
+            const downloadButton = document.createElement('button');
+            downloadButton.textContent = '💾 Download';
+            downloadButton.className = 'btn btn-primary';
+            downloadButton.style.fontSize = '1em';
+            downloadButton.style.padding = '12px 24px';
+            downloadButton.onclick = () => {
+                const blob = new Blob([content], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'supertest-testing-prompt.txt';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
+            
+            modalFooter.appendChild(copyButton);
+            modalFooter.appendChild(downloadButton);
+            
+            modalContent.appendChild(modalHeader);
+            modalContent.appendChild(modalBody);
+            modalContent.appendChild(modalFooter);
+            modalOverlay.appendChild(modalContent);
+            
+            modalOverlay.onclick = (e) => {
+                if (e.target === modalOverlay) {
+                    document.body.removeChild(modalOverlay);
+                }
+            };
+            
+            document.body.appendChild(modalOverlay);
+            promptTextArea.focus();
+        }
+    </script>
+</body>
+</html>

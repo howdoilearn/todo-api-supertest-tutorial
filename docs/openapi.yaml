@@ -1,0 +1,586 @@
+openapi: 3.0.0
+info:
+  title: Todo API
+  version: 1.0.0
+  description: |
+    A Todo/Task Management API with user authentication, CRUD operations on todos, and basic task properties.
+    Built with quality-first design principles for comprehensive Supertest integration testing.
+    
+    ## Quality-First Design Principles
+    
+    This API specification embeds the following quality attributes:
+    
+    - **Testability**: Clear request/response contracts for automated testing
+    - **Validation**: Explicit rules that prevent bad data at API boundaries
+    - **Error Handling**: Comprehensive error scenarios with specific status codes
+    - **Security**: Authentication requirements and authorization rules documented
+  contact:
+    name: API Support
+    email: support@example.com
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+
+tags:
+  - name: Authentication
+    description: User registration and login endpoints
+  - name: Todos
+    description: Todo CRUD operations
+
+x-quality-attributes:
+  testability:
+    - All endpoints must be testable via Supertest without mocking
+    - Responses must be deterministic for same inputs
+    - Error scenarios must be reproducible
+  validation:
+    - Validate all inputs at route level before processing
+    - Use schema validation library (Joi, Zod, or express-validator)
+    - Return 400 with field-level errors for validation failures
+  errorHandling:
+    - Wrap all async operations in try-catch
+    - Use centralized error handling middleware
+    - Never expose stack traces in responses
+    - Log errors server-side with context
+  security:
+    - Hash passwords with bcrypt before storage
+    - Validate JWT on all protected routes
+    - Prevent SQL injection through parameterized queries
+    - Sanitize all user inputs
+
+paths:
+  /api/auth/register:
+    post:
+      summary: Register a new user
+      description: |
+        Creates a new user account with email and password. Returns user object and JWT token for immediate authentication.
+        
+        **Quality Notes:**
+        - Passwords are hashed with bcrypt (10 rounds) before storage
+        - Duplicate email check prevents race conditions
+        - Token expires in 24 hours
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - name
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: Valid email address
+                  example: user@example.com
+                password:
+                  type: string
+                  minLength: 8
+                  description: Password with minimum 8 characters
+                  example: securePassword123
+                name:
+                  type: string
+                  minLength: 2
+                  maxLength: 50
+                  description: User's full name
+                  example: John Doe
+              additionalProperties: false
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - user
+                  - token
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  token:
+                    type: string
+                    description: JWT token for authentication
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoidXNlckBleGFtcGxlLmNvbSIsImlhdCI6MTYwOTQ1OTIwMCwiZXhwIjoxNjA5NTQ1NjAwfQ.signature
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  message: Validation failed
+                  code: VALIDATION_ERROR
+                  details:
+                    - field: email
+                      message: Email must be a valid email address
+                    - field: password
+                      message: Password must be at least 8 characters
+        '409':
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  message: Email already registered
+                  code: DUPLICATE_EMAIL
+
+  /api/auth/login:
+    post:
+      summary: Login user
+      description: |
+        Authenticates user with email and password. Returns user object and JWT token.
+        
+        **Quality Notes:**
+        - Password verification uses bcrypt.compare (constant-time)
+        - Failed attempts don't reveal whether email exists (security)
+        - Token expires in 24 hours
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  example: securePassword123
+              additionalProperties: false
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - user
+                  - token
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  token:
+                    type: string
+                    description: JWT token for authentication
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoidXNlckBleGFtcGxlLmNvbSIsImlhdCI6MTYwOTQ1OTIwMCwiZXhwIjoxNjA5NTQ1NjAwfQ.signature
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  message: Validation failed
+                  code: VALIDATION_ERROR
+                  details:
+                    - field: email
+                      message: Email is required
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  message: Invalid email or password
+                  code: INVALID_CREDENTIALS
+
+  /api/todos:
+    post:
+      summary: Create a new todo
+      description: |
+        Creates a new todo item for the authenticated user.
+        
+        **Quality Notes:**
+        - User ID automatically set from JWT token (prevents privilege escalation)
+        - Title is trimmed and validated
+        - Due date must be in the future (if provided)
+      tags:
+        - Todos
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                  description: Todo title
+                  example: Buy groceries
+                description:
+                  type: string
+                  maxLength: 1000
+                  nullable: true
+                  description: Detailed description (optional)
+                  example: Milk, eggs, bread
+                dueDate:
+                  type: string
+                  format: date-time
+                  nullable: true
+                  description: Due date in ISO 8601 format (optional)
+                  example: "2025-12-31T23:59:59.000Z"
+              additionalProperties: false
+      responses:
+        '201':
+          description: Todo created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    get:
+      summary: Get all todos for authenticated user
+      description: |
+        Retrieves all todo items belonging to the authenticated user.
+        
+        **Quality Notes:**
+        - Results automatically filtered by user ID from token
+        - Returns empty array if no todos exist
+        - Todos ordered by createdAt descending (newest first)
+      tags:
+        - Todos
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of todos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Todo'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/todos/{id}:
+    get:
+      summary: Get a specific todo
+      description: |
+        Retrieves a single todo by ID. User can only access their own todos.
+        
+        **Quality Notes:**
+        - Ownership validation prevents unauthorized access
+        - Returns 403 if todo belongs to another user
+        - Returns 404 if todo doesn't exist
+      tags:
+        - Todos
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Todo ID
+          example: 1
+      responses:
+        '200':
+          description: Todo found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      summary: Update a todo
+      description: |
+        Updates an existing todo. User can only update their own todos.
+        
+        **Quality Notes:**
+        - Partial updates supported (only send fields to change)
+        - Ownership validation prevents unauthorized updates
+        - Updated timestamp automatically set
+      tags:
+        - Todos
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Todo ID
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                  example: Buy groceries - Updated
+                description:
+                  type: string
+                  maxLength: 1000
+                  nullable: true
+                  example: Milk, eggs, bread, cheese
+                completed:
+                  type: boolean
+                  example: true
+                dueDate:
+                  type: string
+                  format: date-time
+                  nullable: true
+                  example: "2025-12-31T23:59:59.000Z"
+              additionalProperties: false
+      responses:
+        '200':
+          description: Todo updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      summary: Delete a todo
+      description: |
+        Deletes a todo. User can only delete their own todos.
+        
+        **Quality Notes:**
+        - Ownership validation prevents unauthorized deletion
+        - Hard delete (no soft delete in simple version)
+        - Idempotent: deleting non-existent todo returns 404
+      tags:
+        - Todos
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Todo ID
+          example: 1
+      responses:
+        '204':
+          description: Todo deleted successfully (no content)
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token obtained from /api/auth/login or /api/auth/register.
+        Include in Authorization header as: Bearer {token}
+
+  schemas:
+    User:
+      type: object
+      required:
+        - id
+        - email
+        - name
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+          description: Unique user identifier
+          example: 1
+        email:
+          type: string
+          format: email
+          description: User's email address
+          example: user@example.com
+        name:
+          type: string
+          description: User's full name
+          example: John Doe
+        createdAt:
+          type: string
+          format: date-time
+          description: Account creation timestamp
+          example: "2025-01-01T00:00:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: "2025-01-01T00:00:00.000Z"
+      additionalProperties: false
+
+    Todo:
+      type: object
+      required:
+        - id
+        - userId
+        - title
+        - completed
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+          description: Unique todo identifier
+          example: 1
+        userId:
+          type: integer
+          description: ID of the user who owns this todo
+          example: 1
+        title:
+          type: string
+          description: Todo title
+          example: Buy groceries
+        description:
+          type: string
+          nullable: true
+          description: Detailed description (optional)
+          example: Milk, eggs, bread
+        completed:
+          type: boolean
+          description: Completion status
+          default: false
+          example: false
+        dueDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Due date (optional)
+          example: "2025-12-31T23:59:59.000Z"
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          example: "2025-01-01T00:00:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: "2025-01-01T00:00:00.000Z"
+      additionalProperties: false
+
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - message
+          properties:
+            message:
+              type: string
+              description: Human-readable error message
+              example: Validation failed
+            code:
+              type: string
+              description: Machine-readable error code
+              example: VALIDATION_ERROR
+            details:
+              type: array
+              description: Field-level validation errors
+              items:
+                type: object
+                required:
+                  - field
+                  - message
+                properties:
+                  field:
+                    type: string
+                    description: Field name that failed validation
+                    example: email
+                  message:
+                    type: string
+                    description: Specific error for this field
+                    example: Email is required
+
+  responses:
+    UnauthorizedError:
+      description: Missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              message: Authentication required
+              code: UNAUTHORIZED
+
+    ForbiddenError:
+      description: User does not have permission to access this resource
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              message: You do not have permission to access this todo
+              code: FORBIDDEN
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              message: Todo not found
+              code: NOT_FOUND
