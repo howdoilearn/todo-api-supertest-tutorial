@@ -17,6 +17,15 @@ function createApp() {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   
+  // Root endpoint
+  app.get('/', (req, res) => {
+    res.status(200).json({
+      message: 'Todo API - Supertest Tutorial',
+      status: 'running',
+      version: '1.0.0'
+    });
+  });
+  
   // Health check endpoint
   app.get('/health', (req, res) => {
     res.status(200).json({ status: 'ok' });
